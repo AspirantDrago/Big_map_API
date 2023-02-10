@@ -1,5 +1,6 @@
 import sys
 import requests
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
@@ -14,8 +15,14 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
 
 
 class Example(QWidget):
+    SCALE_INITIAL = 0.002
+    SCALE_COEFF = 2
+    SCALE_MIN = 0.000125
+    SCALE_MAX = 65.536
+
     def __init__(self):
         super().__init__()
+        self.scale = self.SCALE_INITIAL
         self.initUI()
         self.getImage()
 
@@ -23,7 +30,7 @@ class Example(QWidget):
         url = "http://static-maps.yandex.ru/1.x/"
         params = {
             'll': '37.530887,55.703118',
-            'spn': '0.002,0.002',
+            'spn': f'{self.scale},{self.scale}',
             'l': 'map'
         }
         response = requests.get(url, params=params)
@@ -46,6 +53,21 @@ class Example(QWidget):
         self.image.move(0, 0)
         self.image.resize(*SCREEN_SIZE)
         self.image.setPixmap(self.pixmap)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        is_update = False
+        if event.key() == Qt.Key_PageUp:
+            self.scale /= self.SCALE_COEFF
+            is_update = True
+        elif event.key() == Qt.Key_PageDown:
+            self.scale *= self.SCALE_COEFF
+            is_update = True
+        if self.scale > self.SCALE_MAX:
+            self.scale = self.SCALE_MAX
+        if self.scale < self.SCALE_MIN:
+            self.scale = self.SCALE_MIN
+        if is_update:
+            self.getImage()
 
 
 sys._excepthook = sys.excepthook
